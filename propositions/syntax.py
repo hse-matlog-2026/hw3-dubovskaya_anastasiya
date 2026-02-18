@@ -59,9 +59,9 @@ def is_binary(string: str) -> bool:
     Returns:
         ``True`` if the given string is a binary operator, ``False`` otherwise.
     """
-    return string == '&' or string == '|' or string == '->'
+    # return string == '&' or string == '|' or string == '->'
     # For Chapter 3:
-    # return string in {'&', '|',  '->', '+', '<->', '-&', '-|'}
+    return string in {'&', '|',  '->', '+', '<->', '-&', '-|'}
 
 @frozen
 class Formula:
@@ -360,6 +360,18 @@ class Formula:
         for variable in substitution_map:
             assert is_variable(variable)
         # Task 3.3
+        if is_variable(self.root):
+            if self.root in substitution_map:
+                return substitution_map[self.root]
+            return Formula(self.root)
+        if is_constant(self.root):
+            return Formula(self.root)
+        if is_unary(self.root):
+            return Formula(self.root, self.first.substitute_variables(substitution_map))
+        assert is_binary(self.root)
+        return Formula(self.root,
+                      self.first.substitute_variables(substitution_map),
+                      self.second.substitute_variables(substitution_map))
 
     def substitute_operators(self, substitution_map: Mapping[str, Formula]) -> \
             Formula:
@@ -390,3 +402,22 @@ class Formula:
                    is_binary(operator)
             assert substitution_map[operator].variables().issubset({'p', 'q'})
         # Task 3.4
+        if is_variable(self.root):
+            return Formula(self.root)
+        if is_constant(self.root):
+            if self.root in substitution_map:
+                return substitution_map[self.root]
+            return Formula(self.root)
+        if is_unary(self.root):
+            first_sub = self.first.substitute_operators(substitution_map)
+            if self.root in substitution_map:
+                return substitution_map[self.root].substitute_variables(
+                    {'p': first_sub})
+            return Formula(self.root, first_sub)
+        assert is_binary(self.root)
+        first_sub = self.first.substitute_operators(substitution_map)
+        second_sub = self.second.substitute_operators(substitution_map)
+        if self.root in substitution_map:
+            return substitution_map[self.root].substitute_variables(
+                {'p': first_sub, 'q': second_sub})
+        return Formula(self.root, first_sub, second_sub)
